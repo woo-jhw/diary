@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>일기장</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f6df5">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+:root{--p:#4f6df5;--bg:#fff;--fg:#222;--muted:#888;--line:#e6e6e6;--sun:#e05252;--sat:#4a7bd0}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:system-ui,"Malgun Gothic",sans-serif;background:var(--bg);color:var(--fg)}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;padding:8px 10px;border-radius:8px}
+button:hover{background:#f0f0f0}
+button:disabled{opacity:.5;cursor:default}
+.hidden{display:none!important}
+
+/* 로그인 화면 */
+#login{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+#login h1{margin:0;font-size:32px}
+#login p{margin:0;color:var(--muted)}
+.primary{background:var(--p);color:#fff;padding:12px 22px;font-size:16px}
+.primary:hover{background:#3d5be0}
+
+/* 전체 레이아웃 */
+#app{height:100%;display:flex}
+#cal,#day{display:flex;flex-direction:column;height:100%;padding:8px 12px}
+#cal{flex:1}
+#day{flex:1;border-left:1px solid var(--line)}
+header{display:flex;align-items:center;gap:4px;padding:4px 0}
+header h2{flex:1;text-align:center;margin:0;font-size:18px;white-space:nowrap}
+header .nav{font-size:22px;line-height:1;padding:6px 12px}
+
+/* 달력 */
+.weekdays,#grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.weekdays span{text-align:center;font-size:12px;color:var(--muted);padding:4px 0}
+#grid{flex:1;gap:4px;grid-auto-rows:1fr}
+.cell{border-radius:10px;padding:6px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-height:48px}
+.cell:hover{background:#f4f6ff}
+.cell.empty{cursor:default;background:none}
+.cell.sel{background:#e8edff}
+.n{width:28px;height:28px;line-height:28px;text-align:center;font-size:14px;border-radius:50%}
+.weekdays span:nth-child(1),.cell:nth-child(7n+1) .n{color:var(--sun)}
+.weekdays span:nth-child(7),.cell:nth-child(7n) .n{color:var(--sat)}
+.cell.today .n{background:var(--p);color:#fff}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--p);margin-top:4px}
+#status{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding-top:4px}
+#status button{font-size:12px;padding:4px 8px}
+
+/* 하루 화면 */
+#day .body{flex:1;overflow:auto;display:flex;flex-direction:column}
+#saveState{font-size:12px;color:var(--muted);min-width:60px;text-align:right}
+#text{flex:1;width:100%;border:0;resize:none;font:inherit;font-size:16px;line-height:1.6;outline:none;padding:8px 0;min-height:200px;background:none;color:inherit}
+#photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;padding:8px 0}
+.ph{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#eee}
+.ph img{width:100%;height:100%;object-fit:cover;cursor:pointer;display:block}
+.ph .x{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:24px;height:24px;padding:0;line-height:24px;text-align:center}
+.ph .x:hover{background:rgba(0,0,0,.8)}
+#addPhoto{align-self:flex-start;color:var(--p)}
+#empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+
+/* 사진 크게 보기 */
+#viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer}
+#viewer img{max-width:100%;max-height:100%}
+
+/* 휴대폰: 하루 화면이 달력 위를 덮음 */
+@media (max-width:899px){
+  #day{position:fixed;inset:0;background:var(--bg);border:0;z-index:5}
+  #day:not(.open){display:none}
+}
+@media (min-width:900px){
+  #backBtn{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <h1>일기장</h1>
+  <p>일기는 내 Google Drive의 「일기장」 폴더에 저장됩니다.</p>
+  <button id="loginBtn" class="primary" disabled>불러오는 중…</button>
+  <p id="loginMsg"></p>
+</div>
+
+<div id="app" class="hidden">
+  <section id="cal">
+    <header>
+      <button id="prevMonth" class="nav">‹</button>
+      <h2 id="monthTitle"></h2>
+      <button id="nextMonth" class="nav">›</button>
+      <button id="todayBtn">오늘</button>
+    </header>
+    <div class="weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div id="grid"></div>
+    <div id="status"><span id="statusText"></span><button id="logoutBtn">로그아웃</button></div>
+  </section>
+
+  <section id="day">
+    <header>
+      <button id="backBtn">‹ 달력</button>
+      <button id="prevDay" class="nav">‹</button>
+      <h2 id="dayTitle"></h2>
+      <button id="nextDay" class="nav">›</button>
+      <span id="saveState"></span>
+    </header>
+    <div id="empty">날짜를 선택하세요</div>
+    <div class="body hidden" id="dayBody">
+      <textarea id="text" placeholder="오늘 있었던 일…"></textarea>
+      <div id="photos"></div>
+      <button id="addPhoto">＋ 사진 추가</button>
+      <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    </div>
+  </section>
+</div>
+
+<div id="viewer" class="hidden"><img alt=""></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer onload="onGisLoaded()"></script>
+<script>
+// ===== 설정 =====
+const CLIENT_ID = 'CLIENT_ID_여기에';
+const SCOPE = 'https://www.googleapis.com/auth/drive.file'; // 이 앱이 만든 파일만 접근
+const FOLDER_NAME = '일기장';
+const PHOTO_FOLDER_NAME = '사진';
+const PHOTO_MAX_PX = 1600;
+const API = 'https://www.googleapis.com/drive/v3';
+const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+
+// ===== 상태 =====
+let token = null;        // {access_token, expires_at}
+let tokenClient = null;
+let folderId = null;
+let photoFolderId = null;
+let index = {};          // 'YYYY-MM-DD' -> Drive 파일 id
+let entries = {};        // 'YYYY-MM-DD' -> {text, photos:[{id,name}]}
+let photoCache = {};     // 사진 id -> blob URL
+let viewYear, viewMonth; // 달력에 보이는 달 (month는 0부터)
+let currentDate = null;  // 열려 있는 날
+let dirty = false;
+let saveTimer = null;
+const saving = {};       // 날짜별 저장 순서 보장
+
+const $ = id => document.getElementById(id);
+const DOW = ['일','월','화','수','목','금','토'];
+const pad = n => String(n).padStart(2, '0');
+const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+
+// ===== 로그인 =====
+function onGisLoaded() {
+  if (CLIENT_ID.startsWith('CLIENT_ID_')) {
+    $('loginMsg').textContent = '아직 클라이언트 ID가 설정되지 않았습니다.';
+    return;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    callback: resp => {
+      if (resp.error) { $('loginMsg').textContent = '로그인 실패: ' + resp.error; return; }
+      token = { access_token: resp.access_token, expires_at: Date.now() + resp.expires_in * 1000 };
+      localStorage.setItem('token', JSON.stringify(token));
+      start();
+    }
+  });
+  $('loginBtn').disabled = false;
+  $('loginBtn').textContent = 'Google 계정으로 로그인';
+}
+
+function loadToken() {
+  try {
+    const t = JSON.parse(localStorage.getItem('token'));
+    if (t && t.expires_at > Date.now() + 60000) token = t;
+  } catch {}
+}
+
+function showLogin(msg) {
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+  if (msg) $('loginMsg').textContent = msg;
+}
+
+function logout() {
+  if (token && window.google) google.accounts.oauth2.revoke(token.access_token);
+  token = null;
+  localStorage.removeItem('token');
+  showLogin('');
+}
+
+// ===== Drive API =====
+async function api(url, opts = {}) {
+  const headers = Object.assign({}, opts.headers, { Authorization: 'Bearer ' + token.access_token });
+  const res = await fetch(url, Object.assign({}, opts, { headers }));
+  if (res.status === 401) {
+    token = null;
+    localStorage.removeItem('token');
+    showLogin('로그인이 만료되었습니다. 다시 로그인해 주세요.');
+    throw new Error('로그인 만료');
+  }
+  if (!res.ok) throw new Error(`Drive 오류 ${res.status}`);
+  return res;
+}
+
+async function findOrCreateFolder(name, parent) {
+  let q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  if (parent) q += ` and '${parent}' in parents`;
+  const r = await (await api(`${API}/files?q=${encodeURIComponent(q)}&fields=files(id)`)).json();
+  if (r.files.length) return r.files[0].id;
+  const meta = { name, mimeType: 'application/vnd.google-apps.folder' };
+  if (parent) meta.parents = [parent];
+  const c = await (await api(`${API}/files?fields=id`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta)
+  })).json();
+  return c.id;
+}
+
+async function loadIndex() {
+  const found = {};
+  let pageToken = '';
+  do {
+    const q = `'${folderId}' in parents and name contains '.json' and trashed=false`;
+    let url = `${API}/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name)&pageSize=1000`;
+    if (pageToken) url += '&pageToken=' + pageToken;
+    const r = await (await api(url)).json();
+    for (const f of r.files) {
+      const d = f.name.replace(/\.json$/, '');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) found[d] = f.id;
+    }
+    pageToken = r.nextPageToken || '';
+  } while (pageToken);
+  index = found;
+  localStorage.setItem('index', JSON.stringify(index));
+}
+
+async function loadEntry(date) {
+  if (entries[date]) return entries[date];
+  if (!index[date]) return entries[date] = { text: '', photos: [] };
+  const e = await (await api(`${API}/files/${index[date]}?alt=media`)).json();
+  return entries[date] = { text: e.text || '', photos: e.photos || [] };
+}
+
+async function uploadMultipart(meta, blob) {
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', blob);
+  const r = await (await api(`${UPLOAD}/files?uploadType=multipart&fields=id`, { method: 'POST', body: form })).json();
+  return r.id;
+}
+
+// 같은 날짜의 저장이 겹치지 않도록 순서대로 실행
+function saveEntry(date) {
+  saving[date] = (saving[date] || Promise.resolve()).catch(() => {}).then(() => writeEntry(date));
+  return saving[date];
+}
+
+async function writeEntry(date) {
+  const e = entries[date];
+  const isEmpty = !e.text.trim() && e.photos.length === 0;
+  if (isEmpty) {
+    if (index[date]) {
+      await api(`${API}/files/${index[date]}`, { method: 'DELETE' });
+      delete index[date];
+      localStorage.setItem('index', JSON.stringify(index));
+    }
+    return;
+  }
+  const body = JSON.stringify({ date, text: e.text, photos: e.photos }, null, 2);
+  if (index[date]) {
+    await api(`${UPLOAD}/files/${index[date]}?uploadType=media`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body
+    });
+  } else {
+    const id = await uploadMultipart({ name: date + '.json', parents: [folderId] }, new Blob([body], { type: 'application/json' }));
+    index[date] = id;
+    localStorage.setItem('index', JSON.stringify(index));
+  }
+}
+
+async function photoUrl(id) {
+  if (photoCache[id]) return photoCache[id];
+  const blob = await (await api(`${API}/files/${id}?alt=media`)).blob();
+  return photoCache[id] = URL.createObjectURL(blob);
+}
+
+// 휴대폰 사진은 너무 크니 긴 변 기준으로 줄여서 JPEG로 변환
+function resizeImage(file, max) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s);
+      c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('이미지 변환 실패')), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => reject(new Error('이미지를 열 수 없습니다'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ===== 시작 =====
+async function start() {
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  try { index = JSON.parse(localStorage.getItem('index') || '{}'); } catch { index = {}; }
+  renderGrid();
+  setStatus('동기화 중…');
+  try {
+    folderId = await findOrCreateFolder(FOLDER_NAME);
+    photoFolderId = await findOrCreateFolder(PHOTO_FOLDER_NAME, folderId);
+    await loadIndex();
+    renderGrid();
+    setStatus('');
+  } catch (e) {
+    setStatus('동기화 실패: ' + e.message);
+  }
+}
+
+function setStatus(t) { $('statusText').textContent = t; }
+function setSaveState(t) { $('saveState').textContent = t; }
+
+// ===== 달력 =====
+function renderGrid() {
+  const grid = $('grid');
+  grid.innerHTML = '';
+  const startDow = new Date(viewYear, viewMonth, 1).getDay();
+  const days = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today = fmt(new Date());
+  for (let i = 0; i < startDow; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell empty';
+    grid.appendChild(c);
+  }
+  for (let d = 1; d <= days; d++) {
+    const date = fmt(new Date(viewYear, viewMonth, d));
+    const c = document.createElement('div');
+    c.className = 'cell';
+    if (date === today) c.classList.add('today');
+    if (date === currentDate) c.classList.add('sel');
+    c.innerHTML = `<span class="n">${d}</span>` + (index[date] ? '<span class="dot"></span>' : '');
+    c.onclick = () => openDay(date);
+    grid.appendChild(c);
+  }
+  $('monthTitle').textContent = `${viewYear}년 ${viewMonth + 1}월`;
+}
+
+function moveMonth(delta) {
+  const d = new Date(viewYear, viewMonth + delta, 1);
+  viewYear = d.getFullYear();
+  viewMonth = d.getMonth();
+  renderGrid();
+}
+
+// ===== 하루 화면 =====
+async function openDay(date) {
+  await flush();
+  currentDate = date;
+  const d = parse(date);
+  if (d.getFullYear() !== viewYear || d.getMonth() !== viewMonth) {
+    viewYear = d.getFullYear();
+    viewMonth = d.getMonth();
+  }
+  renderGrid();
+  $('day').classList.add('open');
+  $('empty').classList.add('hidden');
+  $('dayBody').classList.remove('hidden');
+  $('dayTitle').textContent = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`;
+  const ta = $('text');
+  ta.value = '';
+  ta.disabled = true;
+  $('photos').innerHTML = '';
+  setSaveState('불러오는 중…');
+  try {
+    const e = await loadEntry(date);
+    if (currentDate !== date) return; // 그 사이 다른 날로 이동함
+    ta.value = e.text;
+    ta.disabled = false;
+    renderPhotos();
+    setSaveState('');
+  } catch (err) {
+    setSaveState('불러오기 실패: ' + err.message);
+  }
+}
+
+function closeDay() {
+  flush();
+  currentDate = null;
+  $('day').classList.remove('open');
+  $('empty').classList.remove('hidden');
+  $('dayBody').classList.add('hidden');
+  renderGrid();
+}
+
+function moveDay(delta) {
+  const d = parse(currentDate);
+  d.setDate(d.getDate() + delta);
+  openDay(fmt(d));
+}
+
+function markDirty() {
+  dirty = true;
+  setSaveState('…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 1500);
+}
+
+async function flush() {
+  clearTimeout(saveTimer);
+  if (!dirty || !currentDate) return;
+  const date = currentDate;
+  dirty = false;
+  setSaveState('저장 중…');
+  try {
+    await saveEntry(date);
+    if (currentDate === date) setSaveState('저장됨');
+    renderGrid();
+  } catch (e) {
+    dirty = true;
+    setSaveState('저장 실패: ' + e.message);
+  }
+}
+
+function renderPhotos() {
+  const box = $('photos');
+  box.innerHTML = '';
+  for (const p of entries[currentDate].photos) {
+    const div = document.createElement('div');
+    div.className = 'ph';
+    const img = document.createElement('img');
+    img.alt = p.name;
+    photoUrl(p.id).then(u => img.src = u).catch(() => {});
+    img.onclick = () => { $('viewer').querySelector('img').src = img.src; $('viewer').classList.remove('hidden'); };
+    const x = document.createElement('button');
+    x.className = 'x';
+    x.textContent = '✕';
+    x.onclick = () => deletePhoto(p);
+    div.append(img, x);
+    box.appendChild(div);
+  }
+}
+
+async function addPhotos(files) {
+  const date = currentDate;
+  const e = entries[date];
+  const list = Array.from(files);
+  for (let i = 0; i < list.length; i++) {
+    setSaveState(`사진 올리는 중 (${i + 1}/${list.length})…`);
+    try {
+      const blob = await resizeImage(list[i], PHOTO_MAX_PX);
+      const name = `${date}_${Date.now()}.jpg`;
+      const id = await uploadMultipart({ name, parents: [photoFolderId] }, blob);
+      photoCache[id] = URL.createObjectURL(blob);
+      e.photos.push({ id, name });
+      if (currentDate === date) renderPhotos();
+    } catch (err) {
+      alert('사진 업로드 실패: ' + err.message);
+    }
+  }
+  if (currentDate === date) { dirty = true; await flush(); }
+  else await saveEntry(date);
+}
+
+async function deletePhoto(p) {
+  if (!confirm('이 사진을 삭제할까요?')) return;
+  const date = currentDate;
+  const e = entries[date];
+  e.photos = e.photos.filter(x => x.id !== p.id);
+  renderPhotos();
+  dirty = true;
+  await flush();
+  try { await api(`${API}/files/${p.id}`, { method: 'DELETE' }); } catch {}
+}
+
+// ===== 이벤트 연결 =====
+$('loginBtn').onclick = () => tokenClient.requestAccessToken();
+$('logoutBtn').onclick = logout;
+$('prevMonth').onclick = () => moveMonth(-1);
+$('nextMonth').onclick = () => moveMonth(1);
+$('todayBtn').onclick = () => openDay(fmt(new Date()));
+$('backBtn').onclick = closeDay;
+$('prevDay').onclick = () => moveDay(-1);
+$('nextDay').onclick = () => moveDay(1);
+$('text').oninput = () => { entries[currentDate].text = $('text').value; markDirty(); };
+$('text').onblur = flush;
+$('addPhoto').onclick = () => $('fileInput').click();
+$('fileInput').onchange = () => { addPhotos($('fileInput').files); $('fileInput').value = ''; };
+$('viewer').onclick = () => $('viewer').classList.add('hidden');
+window.addEventListener('beforeunload', flush);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+
+// ===== 시작 =====
+{
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  loadToken();
+  if (token) start(); else showLogin();
+}
+</script>
+</body>
+</html>
