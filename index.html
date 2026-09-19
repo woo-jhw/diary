@@ -361,6 +361,11 @@ async function loadEntry(date) {
   const e = await (await api(`${API}/files/${index[date].id}?alt=media`)).json();
   entries[date] = { text: e.text || '', photos: e.photos || [], cover: e.cover || null, mt: index[date].mt, local: false };
   persistCache();
+  // 썸네일 기능 전에 저장된 일기: 사진은 있는데 썸네일이 없으면 만들어서 채움
+  if (entries[date].photos.length && !entries[date].cover) {
+    const ent = entries[date];
+    updateCover(ent).then(() => saveEntry(date)).then(() => { if (viewYear === parse(date).getFullYear() && viewMonth === parse(date).getMonth()) renderGrid(); }).catch(() => {});
+  }
   return entries[date];
 }
 
