@@ -1,0 +1,138 @@
+/* ===== 색·글꼴 ===== */
+:root{
+  --p:#b5452f;        /* 포인트(오늘, 일요일) */
+  --bg:#f7f3ea;       /* 종이색 */
+  --fg:#3a3530;
+  --muted:#9a938a;
+  --num:#6b645b;      /* 달력 숫자 */
+  --line:#e6dfd2;
+  --hover:#efe9dc;
+  --sel:#ece4d3;
+  --tile:#e9e2d4;
+  --sun:#b5452f;
+  --sat:#5b7590;
+  --serif:"Gowun Batang","Nanum Myeongjo","Batang",serif;
+  --sans:"Noto Sans KR",system-ui,"Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--p:#d9694f;--bg:#1e1c19;--fg:#e8e2d6;--muted:#8a837a;--num:#a39c92;--line:#33302b;--hover:#2a2723;--sel:#302c26;--tile:#2e2a25;--sun:#d9694f;--sat:#7f9ab5}
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--serif);background:var(--bg);color:var(--fg)}
+button{font:inherit;font-family:var(--sans);font-size:13px;cursor:pointer;border:0;background:none;color:var(--muted);padding:6px 8px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
+button:hover{background:var(--hover);color:var(--fg)}
+button:disabled{opacity:.5;cursor:default}
+input{font:inherit;color:inherit;background:none}
+.hidden{display:none!important}
+
+/* ===== 로그인 ===== */
+#login{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center}
+#login h1{margin:0;font-size:36px;font-weight:700}
+#login p{margin:0;color:var(--muted);font-size:14px}
+.primary{background:var(--fg);color:var(--bg);padding:12px 24px;font-size:15px;border-radius:8px}
+.primary:hover{background:var(--fg);color:var(--bg);opacity:.85}
+
+/* ===== 로그인 만료 알림 ===== */
+#banner{position:fixed;top:0;left:0;right:0;z-index:20;background:#f3e2b3;color:#5a4a1a;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 12px;font-family:var(--sans);font-size:13px}
+#banner button{background:#5a4a1a;color:#fff;padding:6px 12px}
+
+/* ===== 전체 레이아웃 ===== */
+#app{height:100%;display:flex}
+#cal,#year,#day{display:flex;flex-direction:column;height:100%;padding:14px 16px 8px}
+#cal,#year{flex:1}
+#day{flex:1;border-left:1px solid var(--line)}
+header{display:flex;align-items:center;gap:2px;padding:0 0 6px}
+header h2{flex:1;margin:0;font-size:22px;font-weight:700;letter-spacing:-.5px;white-space:nowrap;cursor:pointer;border-radius:6px;padding:4px 4px}
+header h2:hover{background:var(--hover)}
+header .nav{font-size:18px;line-height:1;padding:4px 8px}
+header .sp{flex:1}
+#searchBtn svg{width:18px;height:18px}
+
+/* ===== 달력 ===== */
+.weekdays,#grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.weekdays span{text-align:center;font-family:var(--sans);font-size:10px;color:var(--muted);padding:6px 0 4px}
+#grid{flex:1;gap:0 2px;grid-auto-rows:1fr;min-height:0}
+.cell{padding:5px 4px 3px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-height:48px;overflow:hidden;border-top:1px solid var(--line)}
+.cell:hover{background:var(--hover)}
+.cell.empty{cursor:default;background:none;border-top-color:transparent}
+.cell.sel{background:var(--sel)}
+.n{font-family:var(--sans);font-size:11px;line-height:1;padding:2px 0;color:var(--num);flex:none}
+.weekdays span:nth-child(1),.cell:nth-child(7n+1) .n{color:var(--sun)}
+.weekdays span:nth-child(7),.cell:nth-child(7n) .n{color:var(--sat)}
+.cell.today .n{color:var(--p);font-weight:700}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--muted);margin:2px 0 0 1px}
+.thumb{flex:1;min-height:0;width:100%;object-fit:cover;border-radius:3px;display:block;background:var(--tile)}
+.snip{font-size:10.5px;line-height:1.4;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-all}
+#status{font-family:var(--sans);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding-top:6px}
+#status button{font-size:11px;padding:4px 6px}
+
+/* ===== 검색 ===== */
+#searchBar{display:flex;gap:4px;padding:2px 0 6px}
+#q{flex:1;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:8px 4px;outline:none;font-size:15px}
+#q:focus{border-color:var(--fg)}
+#results{flex:1;overflow:auto;min-height:0}
+.res{padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer}
+.res:hover{background:var(--hover)}
+.res b{display:block;font-family:var(--sans);font-size:11px;font-weight:500;color:var(--num);margin-bottom:4px;letter-spacing:.5px}
+.res span{font-size:13.5px;line-height:1.6;color:var(--fg)}
+.res mark{background:none;color:var(--p);font-weight:700}
+#results .msg{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ===== 연간 보기 ===== */
+#stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--sans);font-size:12px;color:var(--muted);padding:2px 4px 12px}
+#stats b{font-family:var(--serif);color:var(--fg);font-size:17px;margin-right:2px}
+#months{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start;min-height:0}
+.mini{cursor:pointer;border-radius:6px;padding:6px}
+.mini:hover{background:var(--hover)}
+.mini .mt{font-size:13px;font-weight:700;padding:0 0 4px 2px}
+.mini .mg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mini .mg span{aspect-ratio:1;font-family:var(--sans);font-size:9px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:var(--muted)}
+.mini .mg span.has{background:var(--fg);color:var(--bg)}
+.mini .mg span.today{outline:1.5px solid var(--p);outline-offset:-1px;color:var(--p)}
+
+/* ===== 하루 화면 ===== */
+#day .body{flex:1;overflow:auto;display:flex;flex-direction:column;min-height:0}
+#saveState{font-family:var(--sans);font-size:11px;color:var(--muted);min-width:60px;text-align:right}
+#dayTitle{padding:6px 4px 14px}
+#dayYm{display:block;font-family:var(--sans);font-size:11px;letter-spacing:2px;color:var(--muted)}
+#dayD{display:block;font-size:24px;font-weight:700;margin-top:2px}
+#text{flex:1;width:100%;border:0;resize:none;font:inherit;font-size:15.5px;line-height:1.9;outline:none;padding:0 4px;min-height:200px;background:none;color:inherit}
+#text::placeholder{color:var(--muted)}
+#photos{display:grid;grid-template-columns:repeat(auto-fill,96px);gap:8px;padding:12px 4px}
+.ph{position:relative;aspect-ratio:1;border-radius:4px;overflow:hidden;background:var(--tile);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.ph img{width:100%;height:100%;object-fit:cover;cursor:pointer;display:block}
+.ph button{position:absolute;background:rgba(0,0,0,.5);color:#fff;border-radius:50%;width:22px;height:22px;padding:0;font-size:13px}
+.ph button:hover{background:rgba(0,0,0,.8);color:#fff}
+.ph .x{top:4px;right:4px}
+.ph .l{bottom:4px;left:4px}
+.ph .r{bottom:4px;right:4px}
+#addPhoto{align-self:flex-start;margin:0 0 8px}
+#empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+
+/* ===== 사진 크게 보기 ===== */
+#viewer{position:fixed;inset:0;background:rgba(20,18,15,.95);display:flex;align-items:center;justify-content:center;z-index:10}
+#viewer img{max-width:100%;max-height:100%;user-select:none}
+#viewer .vnav{position:absolute;top:50%;transform:translateY(-50%);color:#fff;font-size:40px;padding:20px 16px;background:none}
+#viewer .vnav:hover{background:rgba(255,255,255,.1);color:#fff}
+#vPrev{left:0}
+#vNext{right:0}
+#vCount{position:absolute;top:12px;left:0;right:0;text-align:center;color:#aaa;font-family:var(--sans);font-size:12px}
+#vClose{position:absolute;top:4px;right:4px;color:#fff;font-size:24px}
+#vClose:hover{color:#fff}
+
+/* ===== 휴대폰: 하루 화면이 달력 위를 덮음 ===== */
+@media (max-width:899px){
+  #cal,#year,#day{padding:12px 12px 6px}
+  #day{position:fixed;inset:0;background:var(--bg);border:0;z-index:5}
+  #day:not(.open){display:none}
+  #backBtn{white-space:nowrap}
+  #saveState{min-height:0}
+  .cell{padding:4px 2px 2px}
+  .n{font-size:10.5px}
+  .snip{font-size:10px;-webkit-line-clamp:4}
+  #photos{grid-template-columns:repeat(auto-fill,84px)}
+}
+@media (min-width:900px){
+  #backBtn{display:none}
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "design",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "C:/Users/woooa/AppData/Local/Temp/claude/C--Users-woooa-Projects-diary/43a708f2-6ef6-436a-b7f8-51323733bc75/scratchpad"],
+      "port": 8765
+    }
+  ]
+}
