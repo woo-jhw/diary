@@ -428,8 +428,8 @@ function renderGrid() {
     if (hasEntry(date)) {
       const e = entries[date];
       if (e && e.cover) inner += `<img class="thumb" src="${e.cover}" alt="">`;
-      else if (e && e.text.trim()) inner += `<span class="snip">${esc(firstLine(e.text))}</span>`;
-      else inner += '<span class="dot"></span>';
+      if (e && e.text.trim()) inner += `<span class="snip">${esc(firstLine(e.text))}</span>`;
+      if (!e || (!e.cover && !e.text.trim())) inner += '<span class="dot"></span>';
     }
     c.innerHTML = inner;
     c.onclick = () => openDay(date);

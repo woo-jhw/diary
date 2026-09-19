@@ -64,6 +64,7 @@ header .sp{flex:1}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);margin:2px 0 0 1px}
 .thumb{flex:none;width:100%;aspect-ratio:1;max-height:100%;object-fit:cover;border-radius:3px;display:block;background:var(--tile)}
 .snip{font-size:10.5px;line-height:1.4;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-all}
+.thumb+.snip{-webkit-line-clamp:2}
 #status{font-family:var(--sans);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding-top:6px}
 #status button{font-size:11px;padding:4px 6px}
 
