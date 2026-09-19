@@ -80,7 +80,6 @@
   <button id="vClose">✕</button>
 </div>
 
-<script src="https://accounts.google.com/gsi/client" async defer onload="onGisLoaded()"></script>
 <script>
 // ===== 설정 =====
 const CLIENT_ID = '561191719904-vdpjgrg86jtfjj17u4ltghin0t4t7lio.apps.googleusercontent.com';
@@ -821,5 +820,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   if (token) start(); else showLogin();
 }
 </script>
+<!-- 구글 로그인 스크립트는 위 코드가 준비된 뒤에 불러와야 onGisLoaded를 찾을 수 있음 -->
+<script src="https://accounts.google.com/gsi/client" async onload="onGisLoaded()"></script>
 </body>
 </html>
